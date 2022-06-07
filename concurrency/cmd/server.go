@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"sync"
 	"time"
 
@@ -26,12 +27,16 @@ func main() {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	ticker := time.After(time.Second * 3)
+	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*60)
+	defer cancel()
+
 	go func() {
 		select {
 		case <-ticker:
-			worker.Shutdown()
+			worker.Shutdown(ctx)
 			wg.Done()
 		}
 	}()
+
 	wg.Wait()
 }

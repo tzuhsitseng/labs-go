@@ -1,6 +1,7 @@
 package concurrency
 
 import (
+	"context"
 	"fmt"
 	"sync"
 )
@@ -62,7 +63,7 @@ func (w *MathWorker) Dispatch(jobs ...Job) {
 	}
 }
 
-func (w *MathWorker) Shutdown() {
+func (w *MathWorker) Shutdown(ctx context.Context) {
 	wg := sync.WaitGroup{}
 	wg.Add(len(w.jobChan))
 
@@ -78,9 +79,19 @@ func (w *MathWorker) Shutdown() {
 	}()
 
 	for i := range w.jobChan {
+		go func() {
+			for {
+				select {
+				case <-ctx.Done():
+					fmt.Println("context is timeout")
+					w.closeChan <- struct{}{}
+					return
+				}
+			}
+		}()
 		close(w.jobChan[i])
 	}
 
 	wg.Wait()
-	fmt.Println("all workers are already closed")
+	fmt.Println("shutdown succeed")
 }
